@@ -65,5 +65,57 @@ public class BPlusTree {
 		}
 
 	}
+	
+	// Binary tree search program
+	private int binaryTreeSearch(DictionaryPair[] dictionaryPairs, int numPairs, int key) {
+		Comparator<DictionaryPair> comparator = new Comparator<DictionaryPair>() {
+			@Override
+			public int compare(DictionaryPair dictionaryPair1, DictionaryPair dictionaryPair2) {
+				Integer keyValue1 = Integer.valueOf(dictionaryPair1.key);
+				Integer keyValue2 = Integer.valueOf(dictionaryPair2.key);
+				return keyValue1.compareTo(keyValue2);
+			}
+		};
+		byte[] value = null;
+		return Arrays.binarySearch(dictionaryPairs, 0, numPairs, new DictionaryPair(key, value), comparator);
+	}
+
+	// Find the leaf node
+	private LeafNode findLeafNode(int key) {
+		Integer[] keys = this.rootNode.keys;
+		int i;
+
+		for (i = 0; i < this.rootNode.degree - 1; i++) {
+			if (key < keys[i]) {
+				break;
+			}
+		}
+
+		Node child = this.rootNode.childPointers[i];
+		if (child instanceof LeafNode) {
+			return (LeafNode) child;
+		} else {
+			return findLeafNode((InternalNode) child, key);
+		}
+	}
+
+	// Find the leaf node
+	private LeafNode findLeafNode(InternalNode node, int key) {
+
+		Integer[] keys = node.keys;
+		int i;
+
+		for (i = 0; i < node.degree - 1; i++) {
+			if (key < keys[i]) {
+				break;
+			}
+		}
+		Node childNode = node.childPointers[i];
+		if (childNode instanceof LeafNode) {
+			return (LeafNode) childNode;
+		} else {
+			return findLeafNode((InternalNode) node.childPointers[i], key);
+		}
+	}
 
 }

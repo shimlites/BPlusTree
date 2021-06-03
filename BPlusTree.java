@@ -23,11 +23,16 @@ public class BPlusTree {
 		if (args.length != constants.DBQUERY_ARG_COUNT) {
 			return;
 		}
+		int recordSize = Integer.parseInt(args[constants.DBQUERY_PAGE_SIZE_ARG]);
+		bTreeFanout1000(recordSize);
+		bTreeFanout200(recordSize);
+	}
+
+	private static void bTreeFanout1000(int recordSize) {
 		LocalDateTime startTime = LocalDateTime.now();
-		BPlusTree bPlusTree = new BPlusTree(3);
+		BPlusTree bPlusTree = new BPlusTree(1000);
 
 		int recordId = 0;
-		int recordSize = Integer.parseInt(args[constants.DBQUERY_PAGE_SIZE_ARG]);
 		String datafile = "heap." + recordSize;
 		int numBytesInOneRecord = constants.TOTAL_SIZE;
 		int numBytesInSdtnameField = constants.STD_NAME_SIZE;
@@ -64,6 +69,77 @@ public class BPlusTree {
 			System.err.println("IOException getting while read page , err msg is : " + ioe.getMessage());
 		}
 
+		bPlusTree.search(2, 5, false);
+		// Equality Search
+		System.out.println("Equality Search with fanout (1000)");
+		bPlusTree.search(1, true);
+		bPlusTree.search(54430, true);
+		System.out.println();
+
+		// Range Search
+		System.out.println("Range Search with fanout (1000)");
+		bPlusTree.search(2, 5, true);
+
+		LocalDateTime finishedTime = LocalDateTime.now();
+		long totalTimeTaken = Duration.between(startTime, finishedTime).toNanos();
+		System.out.println("Total time taken for fanout (1000) : " + totalTimeTaken + " ns");
+	}
+
+	private static void bTreeFanout200(int recordSize) {
+		LocalDateTime startTime = LocalDateTime.now();
+		BPlusTree bPlusTree = new BPlusTree(200);
+
+		int recordId = 0;
+		String datafile = "heap." + recordSize;
+		int numBytesInOneRecord = constants.TOTAL_SIZE;
+		int numBytesInSdtnameField = constants.STD_NAME_SIZE;
+		int numRecordsPerPage = recordSize / numBytesInOneRecord;
+		byte[] page = new byte[recordSize];
+		try (FileInputStream inStream = new FileInputStream(datafile);) {
+			Integer numBytesRead = 0;
+			// Create byte arrays for each field
+			byte[] sdtnameBytes = new byte[numBytesInSdtnameField];
+			// until the end of the binary file is reached
+			while ((numBytesRead = inStream.read(page)) != -1) {
+				// Process each record in page
+				for (int index = 0; index < numRecordsPerPage; index++) {
+					byte[] recordBytes = new byte[constants.TOTAL_SIZE];
+					// Copy record's SdtName (field is located at multiples of the total record byte
+					// length)
+					System.arraycopy(page, (index * numBytesInOneRecord), sdtnameBytes, 0, numBytesInSdtnameField);
+
+					// Check if field is empty; if so, end of all records found (packed
+					// organisation)
+					if (sdtnameBytes[0] == 0) {
+						// can stop checking records
+						break;
+					}
+
+					System.arraycopy(page, (index * numBytesInOneRecord), recordBytes, 0, constants.TOTAL_SIZE);
+					recordId++;
+					bPlusTree.insert(recordId, recordBytes);
+				}
+			}
+		} catch (FileNotFoundException fnf) {
+			System.err.println("FileNotFoundException getting while read page , err msg is : " + fnf.getMessage());
+		} catch (IOException ioe) {
+			System.err.println("IOException getting while read page , err msg is : " + ioe.getMessage());
+		}
+
+		bPlusTree.search(2, 5, false);
+		// Equality Search
+		System.out.println("Equality Search with fanout (200)");
+		bPlusTree.search(1, true);
+		bPlusTree.search(5443, true);
+		System.out.println();
+
+		// Range Search
+		System.out.println("Range Search with fanout (200)");
+		bPlusTree.search(2, 5, true);
+
+		LocalDateTime finishedTime = LocalDateTime.now();
+		long totalTimeTaken = Duration.between(startTime, finishedTime).toNanos();
+		System.out.println("Total time taken for fanout (200) : " + totalTimeTaken + " ns");
 	}
 	
 	// Binary tree search program
@@ -117,7 +193,7 @@ public class BPlusTree {
 			return findLeafNode((InternalNode) node.childPointers[i], key);
 		}
 	}
-	
+
 	// Get the mid point
 	private int getMidpoint() {
 		return (int) Math.ceil((this.index + 1) / 2.0) - 1;
@@ -312,7 +388,7 @@ public class BPlusTree {
 		}
 	}
 
-	private byte[] search(int key) {
+	private byte[] search(int key, boolean isPrint) {
 		if (isEmpty()) {
 			return null;
 		}
@@ -321,16 +397,20 @@ public class BPlusTree {
 		DictionaryPair[] dps = leafNode.dictionary;
 		int index = binaryTreeSearch(dps, leafNode.numPairs, key);
 		if (index < 0) {
-			System.out.println("Record not found : " + key);
+			if (isPrint) {
+				System.out.println("Record not found : " + key);
+			}
 			return null;
 		} else {
-			System.out.print("Record found : " + key);
-			parseBytes(dps[index].value);
+			if (isPrint) {
+				System.out.print("Record found : " + key);
+			}
+			parseBytes(dps[index].value,isPrint);
 			return dps[index].value;
 		}
 	}
 
-	private List<byte[]> search(int lowerBound, int upperBound) {
+	private List<byte[]> search(int lowerBound, int upperBound, boolean isPrint) {
 		List<byte[]> values = new ArrayList<>();
 		LeafNode currNode = this.firstLeaf;
 		while (currNode != null) {
@@ -341,8 +421,10 @@ public class BPlusTree {
 					break;
 				}
 				if (lowerBound <= dictionaryPair.key && dictionaryPair.key <= upperBound) {
-					System.out.print("Record found : " + dictionaryPair.key);
-					parseBytes(dictionaryPair.value);
+					if (isPrint) {
+						System.out.print("Record found : " + dictionaryPair.key);
+					}
+					parseBytes(dictionaryPair.value, isPrint);
 					values.add(dictionaryPair.value);
 				}
 			}
@@ -495,7 +577,7 @@ public class BPlusTree {
 		}
 	}
 
-	private void parseBytes(byte[] Record) {
+	private void parseBytes(byte[] Record, boolean isPrint) {
 		int numBytesInSdtnameField = constants.STD_NAME_SIZE;
 		int numBytesIntField = Integer.BYTES;
 		byte[] sdtnameBytes = new byte[numBytesInSdtnameField];
@@ -535,7 +617,9 @@ public class BPlusTree {
 				+ ByteBuffer.wrap(mdate_Bytes).getInt() + "," + new String(day_Bytes).trim() + ","
 				+ ByteBuffer.wrap(time_Bytes).getInt() + "," + ByteBuffer.wrap(sensorId_Bytes).getInt() + ","
 				+ new String(sensorName_Bytes).trim() + "," + ByteBuffer.wrap(counts_Bytes).getInt();
-		System.out.println(record);
+		if (isPrint) {
+			System.out.println(record);
+		}
 	}
 
 }

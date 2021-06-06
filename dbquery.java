@@ -64,24 +64,7 @@ public class dbquery {
                     String sdtNameString = new String(sdtnameBytes);
                     String sFormat = String.format("(.*)%s(.*)", text); 
                     
-                    // if match is found, copy bytes of other fields and print out the record
-                    //if (sdtNameString.matches(sFormat)) {
-                        /*
-                         * Fixed Length Records (total size = 112 bytes):
-                         * SDT_NAME field = 24 bytes, offset = 0
-                         * id field = 4 bytes, offset = 24
-                         * date field = 8 bytes, offset = 28
-                         * year field = 4 bytes, offset = 36
-                         * month field = 9 bytes, offset = 40
-                         * mdate field = 4 bytes, offset = 49
-                         * day field = 9 bytes, offset = 53
-                         * time field = 4 bytes, offset = 62
-                         * sensorid field = 4 bytes, offset = 66
-                         * sensorname field = 38 bytes, offset = 70
-                         * counts field = 4 bytes, offset = 108
-                         *
-                         * Copy the corresponding sections of "page" to the individual field byte arrays
-                         */
+                   
                         System.arraycopy(page, ((i*numBytesInOneRecord) + constants.ID_OFFSET), idBytes, 0, numBytesIntField);
                         System.arraycopy(page, ((i*numBytesInOneRecord) + constants.DATE_OFFSET), dateBytes, 0, constants.DATE_SIZE);
                         System.arraycopy(page, ((i*numBytesInOneRecord) + constants.YEAR_OFFSET), yearBytes, 0, numBytesIntField);

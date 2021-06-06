@@ -9,9 +9,7 @@ public class BTree <T, V extends Comparable<V>>{
     //B+ tree order
     private Integer bTreeOrder;
     private Integer fanout;
-    //The number of children owned by the non-leaf node of the B+ tree (also the minimum number of keys)
-    //private Integer minNUmber;
-    //The number of nodes that the non-leaf node of the B+ tree has at its maximum (and also the maximum number of keys)
+   
     private Integer maxNumber;
 
     private Node<T, V> root;
@@ -55,22 +53,7 @@ public class BTree <T, V extends Comparable<V>>{
             this.root = t;
         this.left = (LeafNode<T, V>)this.root.refreshLeft();
 
-// System.out.println("Insert completed, the current root node is:");
-//        for(int j = 0; j < this.root.number; j++) {
-//            System.out.print((V) this.root.keys[j] + " ");
-//        }
-//        System.out.println();
-    }
 
-
-    /**
-           * Node parent class, because in the B+ tree, non-leaf nodes do not need to store specific data, just need to use the index as a key.
-           * So the leaves and non-leaf nodes are not the same, but they share some methods, so use the Node class as the parent class.
-           * And because you want to call some public methods to each other, use abstract classes
-     *
-           * @param <T> with BPlusTree
-     * @param <V>
-     */
     abstract class Node<T, V extends Comparable<V>>{
         //parent node
         protected Node<T, V> parent;
@@ -99,11 +82,7 @@ public class BTree <T, V extends Comparable<V>>{
     }
 
 
-    /**
-           * Non-leaf node class
-     * @param <T>
-     * @param <V>
-     */
+   
 
     class BPlusNode <T, V extends Comparable<V>> extends Node<T, V>{
 
@@ -111,11 +90,7 @@ public class BTree <T, V extends Comparable<V>>{
             super();
         }
 
-        /**
-                   * Recursive lookup, here is just to determine exactly which value the value is in, the real find the leaf node will check
-         * @param key
-         * @return
-         */
+      
         @Override
         T find(V key) {
             int i = 0;
@@ -129,11 +104,7 @@ public class BTree <T, V extends Comparable<V>>{
             return this.childs[i].find(key);
         }
 
-        /**
-                   * Recursive insertion, first insert the value into the corresponding leaf node, and finally call the insert class of the leaf node
-         * @param value
-         * @param key
-         */
+      
         @Override
         Node<T, V> insert(T value, V key) {
             int i = 0;
@@ -144,12 +115,6 @@ public class BTree <T, V extends Comparable<V>>{
             }
             if(key.compareTo((V) this.keys[this.number - 1]) >= 0) {
                 i--;
-//                if(this.childs[i].number + 1 <= bTreeOrder) {
-//                    this.keys[this.number - 1] = key;
-//                }
-            }
-
-// System.out.println("non-leaf node lookup key: " + this.keys[i]);
 
             return this.childs[i].insert(value, key);
         }
@@ -159,12 +124,7 @@ public class BTree <T, V extends Comparable<V>>{
             return this.childs[0].refreshLeft();
         }
 
-        /**
-                   * When the leaf node inserts successfully completes the decomposition, recursively inserts a new node to the parent node to maintain balance
-         * @param node1
-         * @param node2
-         * @param key
-         */
+       
         Node<T, V> insertNode(Node<T, V> node1, Node<T, V> node2, V key){
 
 // System.out.println("non-leaf node, insert key: " + node1.keys[node1.number - 1] + " " + node2.keys[node2.number - 1]);
@@ -250,11 +210,7 @@ public class BTree <T, V extends Comparable<V>>{
 
     }
 
-    /**
-           * Leaf node class
-     * @param <T>
-     * @param <V>
-     */
+  
     class LeafNode <T, V extends Comparable<V>> extends Node<T, V> {
 
         protected Object values[];
@@ -330,11 +286,6 @@ public class BTree <T, V extends Comparable<V>>{
             tempValues[i] = value;
 
             this.number++;
-
-// System.out.println("Insert completed, current node key is:");
-//            for(int j = 0; j < this.number; j++)
-//                System.out.print(tempKeys[j] + " ");
-//            System.out.println();
 
             if(this.number <= bTreeOrder){
                 System.arraycopy(tempKeys, 0, this.keys, 0, this.number);

@@ -11,23 +11,6 @@ import java.util.Date;
 
 public class dbload {
 
-    /*
-     * Loads data from an input csv into fixed-length records. Record fields are:
-     * SDT_NAME field = 24 bytes, offset = 0
-     * id field = 4 bytes, offset = 24
-     * date field = 8 bytes, offset = 28
-     * year field = 4 bytes, offset = 36
-     * month field = 9 bytes, offset = 40
-     * mdate field = 4 bytes, offset = 49
-     * day field = 9 bytes, offset = 53
-     * time field = 4 bytes, offset = 62
-     * sensorid field = 4 bytes, offset = 66
-     * sensorname field = 38 bytes, offset = 70
-     * counts field = 4 bytes, offset = 108
-     * end of record = 111 (inclusive)
-     *
-     * Outputs a binary file called heap.pagesize
-     */
     public static void main(String[] args) throws IOException {
 
         // check for correct number of arguments
@@ -46,7 +29,7 @@ public class dbload {
         boolean exceptionOccurred = false;
         final int numBytesFixedLengthRecord = constants.TOTAL_SIZE;
         int numRecordsPerPage = pageSize/numBytesFixedLengthRecord;
-        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss a");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
 
         BufferedReader reader = null;
         FileOutputStream outputStream = null;
@@ -83,7 +66,7 @@ public class dbload {
                 int counts = Integer.parseInt(valuesAsStrings[constants.COUNTS_POS]);
                 String sdtName = sensorIdString + dateTimeString;
                 int sensorId = Integer.parseInt(sensorIdString);
-
+                System.out.println(dateTimeString);
                 // parse datetime field into a date object, then get long datatype representation
                 Date date = dateFormat.parse(dateTimeString);
                 long dateTimeLongRep = date.getTime();

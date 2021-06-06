@@ -11,6 +11,7 @@ import java.util.Date;
 
 public class dbload {
 
+   
     public static void main(String[] args) throws IOException {
 
         // check for correct number of arguments
@@ -29,7 +30,7 @@ public class dbload {
         boolean exceptionOccurred = false;
         final int numBytesFixedLengthRecord = constants.TOTAL_SIZE;
         int numRecordsPerPage = pageSize/numBytesFixedLengthRecord;
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss a");
 
         BufferedReader reader = null;
         FileOutputStream outputStream = null;

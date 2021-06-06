@@ -63,7 +63,6 @@ public class dbquery {
                     // Check for match to "text"
                     String sdtNameString = new String(sdtnameBytes);
                     String sFormat = String.format("(.*)%s(.*)", text); 
-                    
                    
                         System.arraycopy(page, ((i*numBytesInOneRecord) + constants.ID_OFFSET), idBytes, 0, numBytesIntField);
                         System.arraycopy(page, ((i*numBytesInOneRecord) + constants.DATE_OFFSET), dateBytes, 0, constants.DATE_SIZE);

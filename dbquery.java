@@ -51,7 +51,6 @@ public class dbquery {
             while ((numBytesRead = inStream.read(page)) != -1) {
                 // Process each record in page
                 for (int i = 0; i < numRecordsPerPage; i++) {
-
                     // Copy record's SdtName (field is located at multiples of the total record byte length)
                     System.arraycopy(page, (i*numBytesInOneRecord), sdtnameBytes, 0, numBytesInSdtnameField);
 
@@ -63,9 +62,10 @@ public class dbquery {
 
                     // Check for match to "text"
                     String sdtNameString = new String(sdtnameBytes);
-                    String sFormat = String.format("(.*)%s(.*)", text);
+                    String sFormat = String.format("(.*)%s(.*)", text); 
+                    
                     // if match is found, copy bytes of other fields and print out the record
-                    if (sdtNameString.matches(sFormat)) {
+                    //if (sdtNameString.matches(sFormat)) {
                         /*
                          * Fixed Length Records (total size = 112 bytes):
                          * SDT_NAME field = 24 bytes, offset = 0
@@ -105,7 +105,7 @@ public class dbquery {
                                 new String(sensorNameBytes).trim() + "," + ByteBuffer.wrap(countsBytes).getInt();
                         System.out.println(record);
                     }
-                }
+                //}
             }
 
             finishTime = System.nanoTime();

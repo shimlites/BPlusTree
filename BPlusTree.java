@@ -8,6 +8,7 @@ import java.util.*;
 public class BTree <T, V extends Comparable<V>>{
     //B+ tree order
     private Integer bTreeOrder;
+    private Integer fanout;
     //The number of children owned by the non-leaf node of the B+ tree (also the minimum number of keys)
     //private Integer minNUmber;
     //The number of nodes that the non-leaf node of the B+ tree has at its maximum (and also the maximum number of keys)
@@ -22,6 +23,9 @@ public class BTree <T, V extends Comparable<V>>{
     }
 
     public BTree(Integer bTreeOrder){
+        this.fanout = bTreeOrder;
+        if(bTreeOrder > 3)
+            bTreeOrder = 3;
         this.bTreeOrder = bTreeOrder;
         //this.minNUmber = (int) Math.ceil(1.0 * bTreeOrder / 2.0);
         
@@ -443,163 +447,175 @@ public class BTree <T, V extends Comparable<V>>{
            System.out.println(record);
     }
     
-    public static void main(String[] args) throws IOException
+    public static void equ_search(BTree bt, int esv1)
     {
-        // check for correct number of arguments
-        if (args.length != constants.DBQUERY_ARG_COUNT) {
-            System.out.println("Error: Incorrect number of arguments were input");
-            return;
-        }
-
-        int esv1 = Integer.parseInt(args[constants.EQUERY_ARG1]);
-        int esv2 = Integer.parseInt(args[constants.EQUERY_ARG2]);
-        int rsv1 = Integer.parseInt(args[constants.RQUERY_ARG1]);
-        int rsv2 = Integer.parseInt(args[constants.RQUERY_ARG2]);
-        int esv3 = Integer.parseInt(args[constants.EQUERY_ARG3]);
-        int esv4 = Integer.parseInt(args[constants.EQUERY_ARG4]);
-        int rsv3 = Integer.parseInt(args[constants.RQUERY_ARG3]);
-        int rsv4 = Integer.parseInt(args[constants.RQUERY_ARG4]);
-        int fanv1 = Integer.parseInt(args[constants.FAN_ARG1]);
-        int fanv2 = Integer.parseInt(args[constants.FAN_ARG2]);
-        
-        long setTime = 0;
-        long endTime = 0;
-        
-        setTime = System.nanoTime();
-        
-        BTree bt = new BTree(fanv1);
-        
-        int rid = 0;
-        int rSize = Integer.parseInt(args[constants.DBQUERY_PAGE_SIZE_ARG]);
-
-        String file = "heap." + rSize;
-        int bytesOneRecord = constants.TOTAL_SIZE;
-        int bytesSdtnameField = constants.STD_NAME_SIZE;
-        int recordsPerPage = rSize/bytesOneRecord;
-        byte[] content = new byte[rSize];
-        FileInputStream inputStream = null;
-
-        try {
-            inputStream = new FileInputStream(file);
-            int readBytes = 0;
-            byte[] sdtnameBytes = new byte[bytesSdtnameField];
-            
-            while ((readBytes = inputStream.read(content)) != -1) {
-                    for (int i = 0; i < recordsPerPage; i++) {
-                    byte[] recordBytes = new byte[constants.TOTAL_SIZE];
-                    System.arraycopy(content, (i*bytesOneRecord), sdtnameBytes, 0, bytesSdtnameField);
-
-                    if (sdtnameBytes[0] == 0) {
-                        break;
-                    }
-
-                    System.arraycopy(content, (i*bytesOneRecord), recordBytes, 0, constants.TOTAL_SIZE);
-                    
-                    rid++;
-                    bt.insert(recordBytes, rid);
-                }
-            }
-        }
-        catch (FileNotFoundException e) {
-            System.err.println(e.getMessage());
-        }
-        catch (IOException e) {
-            System.err.println(e.getMessage());
-        }
-        finally {
-
-            if (inputStream != null) {
-                inputStream.close();
-            }
-        }
-
-        for(int i=rsv1;i<=rsv2;i++)
-            bt.parse((byte[])bt.find(i), false, i);
-        //bt.find(rsv1, rsv2, false);
-        setTime = System.nanoTime();
-        //equality search
-        System.out.println("equality search with Fanout " + fanv1);
         bt.parse((byte[])bt.find(esv1), true, esv1);
-        bt.parse((byte[])bt.find(esv2), true, esv2);
-        
-        //range search
-        System.out.println("range search with Fanout " + fanv1);
+    }
+    
+    public static void range_search(BTree bt, int rsv1, int rsv2)
+    {
         for(int i=rsv1;i<=rsv2;i++)
             bt.parse((byte[])bt.find(i), true, i);
+    }
+    
+    
+  public static BTree loadHeap(int size) throws IOException
+  {
+      System.out.println("Please Input fanout");
+      Scanner in = new Scanner(System.in);
+      int fanout = in.nextInt();
+              
+        System.out.println("Loading Heap file in B+ Tree");
+        long startTime = 0;
+        long finishTime = 0;
         
-        endTime = System.nanoTime();
+        startTime = System.nanoTime();
         
-        double time = (double)(endTime - setTime)/(double)(constants.MILLISECONDS_PER_SECOND);
-        System.out.println("Took " + time + " ms");
+        BTree bpt = null;
+        bpt = new BTree(fanout);
         
-        System.out.println();
-        
-        setTime = System.nanoTime();
-        
-        bt = new BTree(fanv2);
-        
-        rid = 0;
-        rSize = Integer.parseInt(args[constants.DBQUERY_PAGE_SIZE_ARG]);
+        int record_id = 0;
+        int recordSize = size;
 
-        file = "heap." + rSize;
-        bytesOneRecord = constants.TOTAL_SIZE;
-        bytesSdtnameField = constants.STD_NAME_SIZE;
-        recordsPerPage = rSize/bytesOneRecord;
-        content = new byte[rSize];
-        
+        String datafile = "heap." + recordSize;
+        int numBytesInOneRecord = constants.TOTAL_SIZE;
+        int numBytesInSdtnameField = constants.STD_NAME_SIZE;
+        int numRecordsPerPage = recordSize/numBytesInOneRecord;
+        byte[] page = new byte[recordSize];
+        FileInputStream inStream = null;
+
         try {
-            inputStream = new FileInputStream(file);
-            int readBytes = 0;
-            byte[] sdtnameBytes = new byte[bytesSdtnameField];
+            inStream = new FileInputStream(datafile);
+            int numBytesRead = 0;
+            // Create byte arrays for each field
+            byte[] sdtnameBytes = new byte[numBytesInSdtnameField];
             
-            while ((readBytes = inputStream.read(content)) != -1) {
-                    for (int i = 0; i < recordsPerPage; i++) {
+            // until the end of the binary file is reached
+            while ((numBytesRead = inStream.read(page)) != -1) {
+                // Process each record in page
+                for (int i = 0; i < numRecordsPerPage; i++) {
                     byte[] recordBytes = new byte[constants.TOTAL_SIZE];
-                    System.arraycopy(content, (i*bytesOneRecord), sdtnameBytes, 0, bytesSdtnameField);
+                    // Copy record's SdtName (field is located at multiples of the total record byte length)
+                    System.arraycopy(page, (i*numBytesInOneRecord), sdtnameBytes, 0, numBytesInSdtnameField);
 
+                    // Check if field is empty; if so, end of all records found (packed organisation)
                     if (sdtnameBytes[0] == 0) {
+                        // can stop checking records
                         break;
                     }
 
-                    System.arraycopy(content, (i*bytesOneRecord), recordBytes, 0, constants.TOTAL_SIZE);
+                    System.arraycopy(page, (i*numBytesInOneRecord), recordBytes, 0, constants.TOTAL_SIZE);
                     
-                    rid++;
-                    bt.insert(recordBytes, rid);
+                    record_id++;
+                    bpt.insert(recordBytes, record_id);
                 }
             }
         }
         catch (FileNotFoundException e) {
-            System.err.println(e.getMessage());
+            System.err.println("File not found " + e.getMessage());
         }
         catch (IOException e) {
-            System.err.println(e.getMessage());
+            System.err.println("IO Exception " + e.getMessage());
         }
         finally {
 
-            if (inputStream != null) {
-                inputStream.close();
+            if (inStream != null) {
+                inStream.close();
             }
         }
 
-        for(int i=rsv3;i<=rsv4;i++)
-            bt.parse((byte[])bt.find(i), false, i);
-        //bt.find(rsv1, rsv2, false);
-        setTime = System.nanoTime();
-        //equality search
-        System.out.println("equality search with Fanout " + fanv2);
-        bt.parse((byte[])bt.find(esv3), true, esv3);
-        bt.parse((byte[])bt.find(esv4), true, esv4);
+        finishTime = System.nanoTime();
         
-        //range search
-        System.out.println("range search with Fanout " + fanv2);
-        for(int i=rsv3;i<=rsv4;i++)
-            bt.parse((byte[])bt.find(i), true, i);
+        long timeInMilliseconds = (finishTime - startTime)/(constants.MILLISECONDS_PER_SECOND);
+        System.out.println("Time taken: " + timeInMilliseconds + " ms");
         
-        endTime = System.nanoTime();
+        System.out.println("Please enter 1 to load heap file in b plus tree.");
+        System.out.println("Please enter 2 for searching using ID field.");
+        System.out.println("Please enter 3 for doing range search using ID field.");
+        System.out.println("Please enter 4 to exit.");
         
-        time = (double)(endTime - setTime)/(double)(constants.MILLISECONDS_PER_SECOND);
-        System.out.println("Took " + time + " ms");
+        return bpt;
+  }
+  
+  public static void EqualSearch(BTree bpt)
+  {
+      long startTime = 0;
+      long finishTime = 0;
         
-        System.out.println();
-    }
+      System.out.println("Please Input Equal search value");
+      Scanner in = new Scanner(System.in);
+      int sv1 = in.nextInt();
+      
+      startTime = System.nanoTime();
+      //equality search
+      System.out.println("equality search with Fanout " + bpt.fanout);
+      equ_search(bpt,sv1);
+      
+      finishTime = System.nanoTime();
+        
+      long timeInMilliseconds = (finishTime - startTime)/(constants.MILLISECONDS_PER_SECOND);
+      System.out.println("Time taken: " + timeInMilliseconds + " ms");
+      
+      System.out.println("Please enter 1 to load heap file in b plus tree.");
+        System.out.println("Please enter 2 for searching using ID field.");
+        System.out.println("Please enter 3 for doing range search using ID field.");
+        System.out.println("Please enter 4 to exit.");
+  }
+  
+  public static void RangeSearch(BTree bpt)
+  {
+      long startTime = 0;
+      long finishTime = 0;
+        
+      startTime = System.nanoTime();
+      
+      System.out.println("Please Input Range search value1");
+      Scanner in = new Scanner(System.in);
+      int rv1 = in.nextInt();
+      
+      System.out.println("Please Input Range search value2");
+      int rv2 = in.nextInt();
+      
+      //range search
+      System.out.println("range search with Fanout " + bpt.fanout);
+      range_search(bpt,rv1,rv2);
+      
+      finishTime = System.nanoTime();
+        
+      long timeInMilliseconds = (finishTime - startTime)/(constants.MILLISECONDS_PER_SECOND);
+      System.out.println("Time taken: " + timeInMilliseconds + " ms");
+      
+      System.out.println("Please enter 1 to load heap file in b plus tree.");
+        System.out.println("Please enter 2 for searching using ID field.");
+        System.out.println("Please enter 3 for doing range search using ID field.");
+        System.out.println("Please enter 4 to exit.");
+  }
+  
+  public static void main(String[] args) throws IOException {
+      
+        System.out.println("Please enter the page size");
+        Scanner in = new Scanner(System.in);
+        int rSize = in.nextInt();
+        System.out.println("Please enter the page size" + rSize);
+        //int rSize = Integer.parseInt(args[constants.DBQUERY_PAGE_SIZE_ARG]);
+        
+        System.out.println("Please enter 1 to load heap file in b plus tree.");
+        System.out.println("Please enter 2 for searching using ID field.");
+        System.out.println("Please enter 3 for doing range search using ID field.");
+        System.out.println("Please enter 4 to exit.");
+        
+        BTree bpt = null;
+        int command = in.nextInt();
+        while(command != 4)
+        {
+            if(command == 1)
+                bpt = loadHeap(rSize);
+            else if(command == 2)
+                EqualSearch(bpt);
+            else if(command == 3)
+                RangeSearch(bpt);
+            command = in.nextInt();
+        }
+        
+  }
 }
